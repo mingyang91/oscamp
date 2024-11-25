@@ -27,6 +27,8 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
+    ("mv", do_mv),
+    ("rename", do_rename),
 ];
 
 fn file_type_to_char(ty: FileType) -> char {
@@ -235,6 +237,70 @@ fn do_cd(mut args: &str) {
         }
     } else {
         print_err!("cd", "too many arguments");
+    }
+}
+
+fn do_mv(args: &str) {
+    let mut args = args.split_whitespace();
+
+    let Some(src) = args.next() else {
+        print_err!("mv", "missing operand");
+        return;
+    };
+
+    let Some(dst) = args.next() else {
+        print_err!("mv", "missing destination");
+        return;
+    };
+
+    if let Err(e) = match fs::metadata(dst) {
+        Err(e) => {
+            if e != std::io::Error::NotFound {
+                print_err!("mv", e);
+                return;
+            } else if dst.ends_with('/') {
+                print_err!("mv", "cannot overwrite directory with non-directory");
+                return;
+            }
+            fs::rename(src, dst)
+        }
+        Ok(m) => {
+            if m.is_dir() {
+                let src_file = format!("{}/{}", dst, src);
+                fs::rename(src, &src_file)
+            } else {
+                fs::rename(src, dst)
+            }
+        }
+    } {
+        print_err!("mv", e);
+    }
+}
+
+fn do_rename(args: &str) {
+    let mut args = args.split_whitespace();
+
+    let Some(src) = args.next() else {
+        print_err!("mv", "missing operand");
+        return;
+    };
+
+    let Some(dst) = args.next() else {
+        print_err!("mv", "missing destination");
+        return;
+    };
+
+    if args.next().is_some() {
+        print_err!("mv", "too many arguments");
+        return;
+    }
+
+    let pwd = std::env::current_dir().unwrap();
+    let src = format!("{}{}", pwd, src);
+    let dst = format!("{}{}", pwd, dst);
+
+    if let Err(e) = fs::rename(&src, &dst) {
+        print_err!("mv", e);
     }
 }
 
