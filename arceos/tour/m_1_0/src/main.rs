@@ -13,15 +13,15 @@ mod loader;
 mod syscall;
 mod task;
 
-use alloc::sync::{Arc, Weak};
+use alloc::sync::Arc;
 use axhal::arch::UspaceContext;
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
 use axhal::trap::{register_trap_handler, PAGE_FAULT};
-use axmm::{kernel_aspace, AddrSpace};
+use axmm::AddrSpace;
 use axstd::io;
 use axsync::Mutex;
-use core::mem::MaybeUninit;
+use axtask::TaskExtRef;
 use loader::load_user_app;
 
 const USER_STACK_SIZE: usize = 0x10000;
@@ -29,14 +29,13 @@ const KERNEL_STACK_SIZE: usize = 0x40000; // 256 KiB
 const APP_ENTRY: usize = 0x1000;
 
 #[register_trap_handler(PAGE_FAULT)]
-fn handle_page_fault(vaddr: VirtAddr, flags: MappingFlags, is_user: bool) -> bool {
-    unsafe { USPACE.upgrade() }
-        .expect("No user address space!")
+fn handle_page_fault(vaddr: VirtAddr, flags: MappingFlags, _is_user: bool) -> bool {
+    axtask::current()
+        .task_ext()
+        .aspace
         .lock()
         .handle_page_fault(vaddr, flags | MappingFlags::USER)
 }
-
-static mut USPACE: Weak<Mutex<AddrSpace>> = Weak::new();
 
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
@@ -53,7 +52,6 @@ fn main() {
     ax_println!("New user address space: {:#x?}", uspace);
 
     let aspace = Arc::new(Mutex::new(uspace));
-    unsafe { USPACE = Arc::downgrade(&aspace) };
 
     // Let's kick off the user process.
     let user_task = task::spawn_user_task(aspace, UspaceContext::new(APP_ENTRY.into(), ustack_top));
