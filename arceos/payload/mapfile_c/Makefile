@@ -1,7 +1,7 @@
 TARGET := mapfile
 
-CC := riscv64-linux-musl-gcc
-STRIP := riscv64-linux-musl-strip
+CC := riscv64-unknown-linux-musl-gcc
+STRIP := riscv64-unknown-linux-musl-strip
 
 all: $(TARGET)
 
