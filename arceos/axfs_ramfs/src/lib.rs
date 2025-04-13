@@ -1,3 +1,4 @@
+#![feature(str_split_remainder)]
 //! RAM filesystem used by [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! The implementation is based on [`axfs_vfs`].

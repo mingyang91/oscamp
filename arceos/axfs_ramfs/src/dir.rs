@@ -67,6 +67,16 @@ impl DirNode {
         children.remove(name);
         Ok(())
     }
+
+    pub fn get_root(self: Arc<Self>) -> VfsNodeRef {
+        let mut current: VfsNodeRef = self;
+        log::info!("current {:p}", Arc::as_ptr(&current),);
+        while let Some(parent) = current.parent() {
+            current = parent;
+            log::info!("current {:p}", Arc::as_ptr(&current),);
+        }
+        current
+    }
 }
 
 impl VfsNodeOps for DirNode {
@@ -94,6 +104,7 @@ impl VfsNodeOps for DirNode {
         if let Some(rest) = rest {
             node.lookup(rest)
         } else {
+            log::info!("lookup node: {} {:p}", name, Arc::as_ptr(&node));
             Ok(node)
         }
     }
@@ -163,6 +174,33 @@ impl VfsNodeOps for DirNode {
         } else {
             self.remove_node(name)
         }
+    }
+
+    fn rename(&self, old: &str, new: &str) -> VfsResult {
+        log::info!("rename at ramfs: {} -> {}", old, new);
+        let node = self.this.upgrade().expect("this node not found");
+        let old_node = node.clone().lookup(old)?;
+
+        let mut split = new.rsplit('/');
+        let new_file_name = split.next().expect("invalid path");
+        let new_parent = split.remainder().expect("invalid path");
+
+        let root = node.clone().get_root();
+        let new_parent_node = root.clone().lookup(new_parent)?;
+
+        log::info!(
+            "old {:p}, new {:p}",
+            Arc::as_ptr(&node),
+            Arc::as_ptr(&new_parent_node)
+        ); // TODO: WHY IS THIS NOT THE SAME?
+        node.as_any() // TODO: this needs to change to new_parent_node
+            .downcast_ref::<DirNode>()
+            .expect("not a dir node")
+            .children
+            .write()
+            .insert(new_file_name.into(), old_node);
+
+        Ok(())
     }
 
     axfs_vfs::impl_vfs_dir_default! {}
