@@ -226,6 +226,7 @@ clean: clean_c
 	rm -rf $(APP)/*.bin $(APP)/*.elf
 	rm -rf tour/*/*.bin tour/*/*.elf
 	cargo clean
+	rm *.img
 
 clean_c::
 	rm -rf ulib/axlibc/build_*

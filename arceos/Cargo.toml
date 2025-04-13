@@ -81,5 +81,8 @@ axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 
+[patch.crates-io]
+kernel_guard = { path = "../crates/kernel_guard"} 
+
 [profile.release]
 lto = true
