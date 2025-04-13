@@ -70,10 +70,8 @@ impl DirNode {
 
     pub fn get_root(self: Arc<Self>) -> VfsNodeRef {
         let mut current: VfsNodeRef = self;
-        log::info!("current {:p}", Arc::as_ptr(&current),);
         while let Some(parent) = current.parent() {
             current = parent;
-            log::info!("current {:p}", Arc::as_ptr(&current),);
         }
         current
     }
@@ -104,7 +102,6 @@ impl VfsNodeOps for DirNode {
         if let Some(rest) = rest {
             node.lookup(rest)
         } else {
-            log::info!("lookup node: {} {:p}", name, Arc::as_ptr(&node));
             Ok(node)
         }
     }
